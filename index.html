@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ArtVision - AI Style Transfer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        .logo {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            color: rgba(255,255,255,0.9);
+            font-weight: 300;
+        }
+
+        .main-card {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 2.5rem;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .upload-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .upload-box {
+            border: 2px dashed #e0e6ed;
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f8fafc;
+            position: relative;
+        }
+
+        .upload-box:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+            transform: translateY(-2px);
+        }
+
+        .upload-box.has-image {
+            border-color: #4ecdc4;
+            background: #f0fffe;
+        }
+
+        .upload-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: #667eea;
+        }
+
+        .upload-text {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #4a5568;
+            margin-bottom: 0.3rem;
+        }
+
+        .upload-subtext {
+            font-size: 0.85rem;
+            color: #718096;
+        }
+
+        .preview-area {
+            display: none;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .image-preview {
+            border-radius: 12px;
+            overflow: hidden;
+            aspect-ratio: 1;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+        }
+
+        .image-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .controls {
+            text-align: center;
+            margin: 2rem 0;
+        }
+
+        .slider-group {
+            margin: 1.5rem 0;
+            padding: 1.5rem;
+            background: rgba(102, 126, 234, 0.05);
+            border-radius: 12px;
+        }
+
+        .slider-label {
+            display: block;
+            margin-bottom: 1rem;
+            font-weight: 600;
+            color: #4a5568;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+        }
+
+        .slider {
+            width: 200px;
+            height: 6px;
+            border-radius: 3px;
+            background: #e2e8f0;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+        }
+
+        .process-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 1rem 2.5rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .process-btn.ready {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .process-btn.ready:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 2rem 0;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        .result-section {
+            display: none;
+            text-align: center;
+            margin-top: 2rem;
+        }
+
+        .result-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 1.5rem;
+        }
+
+        .result-image {
+            max-width: 100%;
+            border-radius: 12px;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+        }
+
+        .download-btn {
+            background: linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%);
+            color: white;
+            border: none;
+            padding: 0.8rem 2rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 50px;
+            cursor: pointer;
+            margin-top: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .download-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .error-message {
+            background: #ff6b6b;
+            color: white;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            display: none;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="logo">ArtVision</h1>
+            <p class="subtitle">AI-Powered Style Transfer</p>
+        </div>
+
+        <div class="main-card">
+            <div class="upload-section">
+                <div class="upload-box" id="content-box" onclick="document.getElementById('content-upload').click()">
+                    <div class="upload-icon">📷</div>
+                    <div class="upload-text">Content Image</div>
+                    <div class="upload-subtext">Upload your photo</div>
+                    <input type="file" id="content-upload" accept="image/*">
+                </div>
+
+                <div class="upload-box" id="style-box" onclick="document.getElementById('style-upload').click()">
+                    <div class="upload-icon">🎨</div>
+                    <div class="upload-text">Style Image</div>
+                    <div class="upload-subtext">Choose art style</div>
+                    <input type="file" id="style-upload" accept="image/*">
+                </div>
+            </div>
+
+            <div class="preview-area" id="preview-area">
+                <div class="image-preview" id="content-preview"></div>
+                <div class="image-preview" id="style-preview"></div>
+            </div>
+
+            <div class="controls">
+                <div class="slider-group">
+                    <label class="slider-label">Style Intensity</label>
+                    <div class="slider-container">
+                        <span>Subtle</span>
+                        <input type="range" class="slider" id="style-intensity" min="0.3" max="1.0" step="0.1" value="0.7">
+                        <span>Strong</span>
+                    </div>
+                    <div id="intensity-value">70%</div>
+                </div>
+
+                <button class="process-btn" id="process-btn">✨ Create Masterpiece</button>
+                <div class="error-message" id="error-message"></div>
+            </div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Processing with neural networks...</p>
+            </div>
+
+            <div class="result-section" id="result-section">
+                <h2 class="result-title">Your Stylized Masterpiece</h2>
+                <img id="result-image" class="result-image" alt="Stylized Result">
+                <br>
+                <button class="download-btn" onclick="downloadResult()">⬇️ Download</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let contentImage = null;
+        let styleImage = null;
+
+        // Event listeners
+        document.getElementById('content-upload').addEventListener('change', function(e) {
+            handleImageUpload(e, 'content');
+        });
+
+        document.getElementById('style-upload').addEventListener('change', function(e) {
+            handleImageUpload(e, 'style');
+        });
+
+        document.getElementById('style-intensity').addEventListener('input', function() {
+            const value = Math.round(this.value * 100);
+            document.getElementById('intensity-value').textContent = value + '%';
+        });
+
+        document.getElementById('process-btn').addEventListener('click', processImages);
+
+        function handleImageUpload(event, type) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const imageData = e.target.result;
+                
+                if (type === 'content') {
+                    contentImage = file;
+                    updatePreview('content-preview', imageData);
+                    document.getElementById('content-box').classList.add('has-image');
+                } else {
+                    styleImage = file;
+                    updatePreview('style-preview', imageData);
+                    document.getElementById('style-box').classList.add('has-image');
+                }
+
+                checkReadyToProcess();
+                document.getElementById('preview-area').style.display = 'grid';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function updatePreview(previewId, imageData) {
+            const preview = document.getElementById(previewId);
+            preview.innerHTML = `<img src="${imageData}" alt="Preview">`;
+        }
+
+        function checkReadyToProcess() {
+            const processBtn = document.getElementById('process-btn');
+            if (contentImage && styleImage) {
+                processBtn.classList.add('ready');
+            }
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error-message');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        async function processImages() {
+            if (!contentImage || !styleImage) {
+                showError('Please upload both images!');
+                return;
+            }
+
+            // Show loading
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('process-btn').style.display = 'none';
+
+            try {
+                const intensity = document.getElementById('style-intensity').value;
+                
+                // Create form data
+                const formData = new FormData();
+                formData.append('content', contentImage);
+                formData.append('style', styleImage);
+                formData.append('intensity', intensity);
+
+                // Call Flask backend
+                const response = await fetch('/process', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // Show result
+                    document.getElementById('result-image').src = result.result;
+                    document.getElementById('result-section').style.display = 'block';
+                    window.stylizedResult = result.result;
+                } else {
+                    showError('Processing failed: ' + result.error);
+                }
+
+            } catch (error) {
+                showError('Network error. Make sure Flask server is running!');
+                console.error('Error:', error);
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('process-btn').style.display = 'inline-block';
+            }
+        }
+
+        function downloadResult() {
+            if (!window.stylizedResult) {
+                showError('No result to download!');
+                return;
+            }
+            
+            const link = document.createElement('a');
+            link.download = 'stylized-artwork.png';
+            link.href = window.stylizedResult;
+            link.click();
+        }
+    </script>
+</body>
+</html>
